@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aktivasi VIP — AnimeKita</title>
+  <meta name="description" content="UI mobile-first untuk aktivasi VIP & cek status. Tidak mengubah API." />
+  <style>
+    :root{
+      --bg:#f7f9fc;
+      --card:#ffffff;
+      --muted:#9aa4b2;
+      --accentA:#6b73ff;
+      --accentB:#3b49ff;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --glass: rgba(255,255,255,0.88);
+      --nav-height:64px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial;background:linear-gradient(180deg,#f0f4ff 0%, var(--bg) 100%);}
+    body{display:flex;align-items:stretch;justify-content:center;padding:14px;color:#0f1724}
+
+    /* app shell */
+    .app-shell{width:100%;max-width:760px;display:flex;flex-direction:column;min-height:100vh;}
+
+    /* topbar */
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--card);border-radius:12px;border:1px solid rgba(8,12,20,0.04);box-shadow:0 8px 24px rgba(12,34,63,0.06);margin-bottom:12px}
+    .top-left{display:flex;align-items:center;gap:12px}
+    .avatar{width:44px;height:44px;border-radius:10px;object-fit:cover}
+    .title-block .app-name{font-weight:700;color:#0b1220}
+    .small-muted{font-size:12px;color:var(--muted)}
+
+    /* main content */
+    .content{display:flex;gap:12px;flex:1;align-items:flex-start}
+    .panel{background:var(--card);border-radius:12px;padding:14px;border:1px solid rgba(8,12,20,0.03);box-shadow: 0 8px 30px rgba(12,34,63,0.04);flex:1;min-width:0}
+    .panel-title{margin:0 0 10px 0;font-size:16px;color:#0b1220;font-weight:700}
+    .label{display:block;margin-top:6px;color:var(--muted);font-size:13px;font-weight:600}
+    input[type=email], select{width:100%;padding:12px;border-radius:10px;border:1px solid #e6ecf5;margin-top:8px;font-size:15px;background:#fbfdff}
+    input:focus, select:focus{outline:none;box-shadow:0 10px 30px rgba(59,73,255,0.06);border-color:rgba(59,73,255,0.12)}
+
+    .actions-row{display:flex;gap:8px;margin-top:12px}
+    button.primary{flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accentA),var(--accentB));color:white;font-weight:700;cursor:pointer}
+    button.ghost{padding:12px;border-radius:10px;border:1px solid #dfe7f5;background:transparent;color:#233;cursor:pointer;font-weight:700}
+    button.small{padding:8px 10px;font-size:13px}
+
+    /* result */
+    .result-area{margin-top:14px;min-height:40px;font-size:14px;color:#1f2937}
+
+    /* separator (visible on wide screens) */
+    .separator{width:12px;display:none;align-items:center;justify-content:center}
+    .separator::before{content:"";width:1px;height:100%;background:linear-gradient(#eef2f7,#f8fafc);border-left:1px dashed rgba(12,34,63,0.04);}
+
+    /* modal */
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,12,20,0.36);backdrop-filter:blur(3px)}
+    .modal.hidden{display:none}
+    .modal-card{background:var(--card);padding:18px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 16px 40px rgba(12,34,63,0.16);border:1px solid rgba(10,20,40,0.04)}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+
+    /* toast */
+    .toast{position:fixed;right:18px;bottom:calc(var(--nav-height) + 18px);padding:12px 16px;border-radius:10px;background:rgba(17,24,39,0.96);color:white;box-shadow:0 8px 24px rgba(2,6,23,0.36);font-weight:600}
+    .toast.hidden{display:none}
+
+    /* success badge */
+    .success-badge{display:inline-flex;align-items:center;gap:8px;background:#ecfdf5;color:var(--success);padding:10px;border-radius:10px;border:1px solid rgba(16,185,129,0.12);font-weight:700}
+    .checkmark{width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;background:var(--success);color:white;font-size:12px}
+
+    /* loader */
+    .loader{display:inline-block;width:18px;height:18px;border-radius:50%;border:3px solid rgba(255,255,255,0.18);border-top-color:rgba(255,255,255,0.95);animation:spin .85s linear infinite;vertical-align:middle;margin-left:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* bottom nav (mobile) */
+    .bottom-nav{position:fixed;left:0;right:0;bottom:0;height:var(--nav-height);display:flex;gap:6px;padding:8px;background:linear-gradient(180deg,var(--card),rgba(255,255,255,0.94));border-top:1px solid rgba(8,12,20,0.04);justify-content:center;align-items:center;box-shadow:0 -10px 30px rgba(12,34,63,0.04)}
+    .nav-btn{flex:1;max-width:220px;background:transparent;border:none;padding:8px 10px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:#3b4150}
+    .nav-btn .nav-ico{font-size:18px}
+    .nav-btn.active{background:linear-gradient(90deg,var(--accentA),var(--accentB));color:white;box-shadow:0 8px 30px rgba(59,73,255,0.14)}
+
+    /* responsiveness */
+    @media (max-width:720px){
+      .content{flex-direction:column}
+      .separator{display:none}
+      .panel{width:100%}
+      .bottom-nav{display:flex}
+      .app-shell{padding-bottom:calc(var(--nav-height) + 12px)}
+    }
+
+    /* wide screens: show both panels side-by-side with separator */
+    @media (min-width:721px){
+      .content{flex-direction:row}
+      .separator{display:flex}
+      .bottom-nav{display:none}
+      .panel{min-height:320px}
+    }
+
+    /* small table style inside result */
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th{text-align:left;padding:6px 8px;color:var(--muted);width:36%}
+    td{padding:6px 8px}
+    .muted{color:var(--muted);font-size:13px}
+    .active-panel{ /* used for focus on mobile; on desktop both visible */ }
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="topbar" role="banner">
+      <div class="top-left">
+        <img class="avatar" id="profileAvatar" src="https://lh3.googleusercontent.com/a/ACg8ocIk6mQVP02KEycB9_MYhhtyiN8eyDaz_N3dp3OwwIDN30ri0XYS=s288-c-no" alt="Profil"/>
+        <div class="title-block">
+          <div class="app-name">AnimeKita</div>
+          <div class="small-muted">VIP Activation</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="btnResetHeader" class="ghost small" type="button">Reset</button>
+      </div>
+    </header>
+
+    <main class="content" id="mainContent" role="main">
+      <section id="panelAktivasi" class="panel" aria-labelledby="vipTitle">
+        <h2 id="vipTitle" class="panel-title">🚀 Aktivasi VIP</h2>
+
+        <label class="label" for="emailAktivasi">Email</label>
+        <input type="email" id="emailAktivasi" placeholder="email@contoh.com" autocomplete="email"/>
+
+        <label class="label" for="durasi">Pilih Durasi</label>
+        <select id="durasi" aria-label="Durasi VIP">
+          <option value="Mzk3MjA4NDM3NjFfM18x">1 Bulan VIP</option>
+          <option value="Mzk3MjA4NDM3NjFfM18z">3 Bulan VIP</option>
+          <option value="Mzk3MjA4NDM3NjFfM18xMg%3D%3D">1 Tahun VIP</option>
+        </select>
+
+        <div class="actions-row" style="margin-top:10px">
+          <button id="btnAktifkan" onclick="konfirmasiAktivasi()" class="primary" type="button">Aktifkan VIP</button>
+          <button id="btnPreview" onclick="previewBefore()" class="ghost" type="button">Lihat Status Sebelum</button>
+        </div>
+
+        <div id="hasilAktivasi" class="result-area" aria-live="polite"></div>
+      </section>
+
+      <div class="separator" aria-hidden="true"></div>
+
+      <section id="panelStatus" class="panel" aria-labelledby="statusTitle">
+        <h2 id="statusTitle" class="panel-title">🔍 Cek Status</h2>
+
+        <label class="label" for="emailStatus">Email</label>
+        <input type="email" id="emailStatus" placeholder="email@contoh.com" autocomplete="email"/>
+
+        <div class="actions-row" style="margin-top:10px">
+          <button id="btnCek" onclick="cekStatus()" class="primary" type="button">Cek Status</button>
+          <button id="btnSalin" onclick="salinStatus()" class="ghost" type="button">Salin Status</button>
+        </div>
+
+        <div id="hasilStatus" class="result-area" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" role="navigation" aria-label="Navigasi utama">
+      <button class="nav-btn active" id="navAktivasi" onclick="navTo('aktivasi')" type="button">
+        <span class="nav-ico">🚀</span>
+        <span class="nav-label">Aktivasi</span>
+      </button>
+      <button class="nav-btn" id="navStatus" onclick="navTo('status')" type="button">
+        <span class="nav-ico">🔍</span>
+        <span class="nav-label">Status</span>
+      </button>
+    </nav>
+
+    <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-card" role="document">
+        <h3 id="confirmTitle">Konfirmasi Aktivasi</h3>
+        <p id="confirmText">Aktivasi VIP akan mengubah data akun. Lanjutkan?</p>
+        <div class="modal-actions">
+          <button onclick="closeConfirm()" class="ghost" type="button">Batal</button>
+          <button id="confirmOk" onclick="prosesVip()" class="primary" type="button">Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  <script>
+    /* Semua fungsi API dan UI ditempatkan di sini.
+       Tidak mengubah endpoint / payload apa pun. */
+
+    const headers = {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Accept": "application/json"
+    };
+    const NAME = "wibu";
+    const PROFILE = "https://lh3.googleusercontent.com/a/ACg8ocIk6mQVP02KEycB9_MYhhtyiN8eyDaz_N3dp3OwwIDN30ri0XYS=s288-c-no";
+
+    function vipDate(epoch) {
+      if (!epoch || epoch == 0) return "-";
+      return new Date(epoch * 1000).toLocaleString();
+    }
+    function escapeHtml(s){
+      if (s === undefined || s === null) return '';
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function showToast(text, timeout = 3000) {
+      const t = document.getElementById('toast');
+      t.textContent = text;
+      t.classList.remove('hidden');
+      clearTimeout(t._hide);
+      t._hide = setTimeout(()=> t.classList.add('hidden'), timeout);
+    }
+
+    function disableControls(state) {
+      document.querySelectorAll('input, select, button').forEach(el => {
+        if (el.id === 'toast') return;
+        el.disabled = !!state;
+      });
+    }
+    function setBusy(on, targetBtn) {
+      if (on) {
+        if (targetBtn) {
+          targetBtn.dataset.orig = targetBtn.innerHTML;
+          targetBtn.innerHTML = 'Tunggu... <span class="loader" aria-hidden="true"></span>';
+        }
+        disableControls(true);
+      } else {
+        if (targetBtn && targetBtn.dataset.orig) {
+          targetBtn.innerHTML = targetBtn.dataset.orig;
+          delete targetBtn.dataset.orig;
+        }
+        disableControls(false);
+      }
+    }
+
+    /* === API calls (tidak diubah) === */
+    async function login(email) {
+      const payload = { user: NAME, email: email, profil: PROFILE };
+      const res = await fetch("https://apps.animekita.org/api/v1.1.6/model/login.php", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!json.data || !json.data[0]) throw new Error("Login gagal atau data tidak ditemukan.");
+      return json.data[0].token;
+    }
+    async function getData(token) {
+      const res = await fetch("https://apps.animekita.org/api/v1.1.6/model/app-config.php", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ token })
+      });
+      const json = await res.json();
+      return json.data[0];
+    }
+    async function setPremium(token, vipCode) {
+      const res = await fetch("https://apps.animekita.org/api/v1.1.6/model/vip.php", {
+        method: "POST",
+        headers,
+        body: new URLSearchParams({ token, vip: vipCode })
+      });
+      const json = await res.json();
+      if (json.status !== "success" && json.status !== 1) throw new Error("Gagal aktivasi VIP.");
+      return json;
+    }
+
+    /* UI helpers */
+    function buatTabelStatus(data, judul) {
+      if (!data) return '<h4>'+judul+'</h4><div class="success-badge">Data tidak tersedia</div>';
+      return `
+        <h4>${escapeHtml(judul)}</h4>
+        <table>
+          <tr><th>Level</th><td>${escapeHtml(data.level||'-')}</td></tr>
+          <tr><th>Rank</th><td>${escapeHtml(data.rank||'-')}</td></tr>
+          <tr><th>VIP Level</th><td>${escapeHtml(data.vipLevel||'-')}</td></tr>
+          <tr><th>Kadaluarsa VIP</th><td>${vipDate(data.vipExp)}</td></tr>
+        </table>
+      `;
+    }
+
+    function resetForm(){
+      document.getElementById('emailAktivasi').value = '';
+      document.getElementById('durasi').selectedIndex = 0;
+      document.getElementById('hasilAktivasi').innerHTML = '';
+      document.getElementById('hasilStatus').innerHTML = '';
+      showToast('Form reset.');
+    }
+
+    /* modal / konfirmasi */
+    function konfirmasiAktivasi(){
+      const email = document.getElementById('emailAktivasi').value.trim();
+      if (!validateEmail(email)) {
+        showToast('Format email tidak valid.', 2500);
+        return;
+      }
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+    function closeConfirm(){ document.getElementById('confirmModal').classList.add('hidden'); }
+
+    /* proses aktivasi */
+    async function prosesVip() {
+      const triggerBtn = document.getElementById('confirmOk');
+      setBusy(true, triggerBtn);
+      closeConfirm();
+
+      const email = document.getElementById('emailAktivasi').value.trim();
+      const vipCode = document.getElementById('durasi').value;
+      const result = document.getElementById('hasilAktivasi');
+
+      if (!email) {
+        result.innerHTML = '<span style="color:red">❌ Email tidak boleh kosong!</span>';
+        setBusy(false, triggerBtn);
+        return;
+      }
+
+      result.innerHTML = '🔄 Login...';
+      try {
+        const token = await login(email);
+        const before = await getData(token);
+        result.innerHTML = buatTabelStatus(before, 'Sebelum Aktivasi');
+
+        await sleep(450);
+
+        result.innerHTML += `<div style="margin-top:10px">🔄 Sedang mengaktifkan...</div>`;
+        await setPremium(token, vipCode);
+
+        const after = await getData(token);
+        result.innerHTML += `<div style="margin-top:10px">${buatTabelStatus(after, 'Setelah Aktivasi')}</div>`;
+        result.innerHTML += `<div style="margin-top:12px" class="success-badge"><span class="checkmark">✓</span> Aktivasi berhasil</div>`;
+        showToast('Aktivasi selesai ✔', 3500);
+      } catch (err) {
+        result.innerHTML = '<span style="color:red">❌ ' + escapeHtml(err.message) + '</span>';
+        showToast('Error: ' + (err.message||'Gagal'), 3500);
+      } finally {
+        setBusy(false, triggerBtn);
+      }
+    }
+
+    /* cek status */
+    async function cekStatus(){
+      const triggerBtn = document.getElementById('btnCek');
+      setBusy(true, triggerBtn);
+
+      const email = document.getElementById('emailStatus').value.trim();
+      const result = document.getElementById('hasilStatus');
+      if (!email) {
+        result.innerHTML = '<span style="color:red">❌ Email tidak boleh kosong!</span>';
+        setBusy(false, triggerBtn);
+        return;
+      }
+      result.innerHTML = '🔄 Mengecek status...';
+      try {
+        const token = await login(email);
+        const data = await getData(token);
+        result.innerHTML = buatTabelStatus(data, 'Status Pengguna');
+        showToast('Status ditemukan.');
+      } catch (err) {
+        result.innerHTML = '<span style="color:red">❌ ' + escapeHtml(err.message) + '</span>';
+        showToast('Error: ' + (err.message||'Gagal'), 3500);
+      } finally {
+        setBusy(false, triggerBtn);
+      }
+    }
+
+    function salinStatus(){
+      const teks = document.getElementById('hasilStatus').innerText || '';
+      navigator.clipboard.writeText(teks).then(() => {
+        showToast('📋 Status berhasil disalin!');
+      }).catch(err => {
+        showToast('❌ Gagal menyalin');
+      });
+    }
+
+    /* preview sebelum aktivasi (UI-only) */
+    async function previewBefore(){
+      const email = document.getElementById('emailAktivasi').value.trim();
+      const result = document.getElementById('hasilAktivasi');
+      if (!validateEmail(email)) { showToast('Masukkan email yang valid'); return; }
+      result.innerHTML = '🔄 Mengambil data...';
+      try {
+        const token = await login(email);
+        const before = await getData(token);
+        result.innerHTML = buatTabelStatus(before, 'Status Saat Ini (Preview)');
+      } catch (err) {
+        result.innerHTML = '<span style="color:red">❌ ' + escapeHtml(err.message) + '</span>';
+      }
+    }
+
+    /* nav / responsive */
+    function navTo(section){
+      const akt = document.getElementById('panelAktivasi');
+      const st = document.getElementById('panelStatus');
+      const navA = document.getElementById('navAktivasi');
+      const navS = document.getElementById('navStatus');
+
+      if (window.matchMedia("(max-width:720px)").matches) {
+        // mobile: show only target
+        if (section === 'aktivasi'){
+          akt.style.display = '';
+          st.style.display = 'none';
+          navA.classList.add('active');
+          navS.classList.remove('active');
+          document.getElementById('emailAktivasi').focus();
+        } else {
+          st.style.display = '';
+          akt.style.display = 'none';
+          navS.classList.add('active');
+          navA.classList.remove('active');
+          document.getElementById('emailStatus').focus();
+        }
+      } else {
+        // desktop: both visible, but update active nav look
+        akt.style.display = '';
+        st.style.display = '';
+        if (section === 'aktivasi') { navA.classList.add('active'); navS.classList.remove('active'); } 
+        else { navS.classList.add('active'); navA.classList.remove('active'); }
+      }
+    }
+
+    function adaptInitialView(){
+      if (window.matchMedia("(max-width:720px)").matches){
+        navTo('aktivasi');
+      } else {
+        // desktop: ensure both visible
+        document.getElementById('panelAktivasi').style.display = '';
+        document.getElementById('panelStatus').style.display = '';
+      }
+    }
+
+    function validateEmail(email){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+    }
+    function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+    /* init */
+    window.addEventListener('load', () => {
+      adaptInitialView();
+      const hdrReset = document.getElementById('btnResetHeader');
+      if (hdrReset) hdrReset.addEventListener('click', resetForm);
+      const modal = document.getElementById('confirmModal');
+      modal.addEventListener('click', (e) => { if (e.target === modal) closeConfirm(); });
+      // ensure nav buttons exist
+      document.getElementById('navAktivasi').addEventListener('click', () => navTo('aktivasi'));
+      document.getElementById('navStatus').addEventListener('click', () => navTo('status'));
+      // keyboard-friendly: Enter to trigger check on status field
+      document.getElementById('emailStatus').addEventListener('keydown', (e) => { if (e.key === 'Enter') cekStatus(); });
+      document.getElementById('emailAktivasi').addEventListener('keydown', (e) => { if (e.key === 'Enter') konfirmasiAktivasi(); });
+    });
+
+    // expose to global for inline onclick usage
+    window.login = login;
+    window.getData = getData;
+    window.setPremium = setPremium;
+    window.konfirmasiAktivasi = konfirmasiAktivasi;
+    window.closeConfirm = closeConfirm;
+    window.prosesVip = prosesVip;
+    window.cekStatus = cekStatus;
+    window.salINstatus = salinStatus; // legacy-safe alias (typo-safe)
+    window.salIN = salinStatus;
+    window.previewBefore = previewBefore;
+    window.navTo = navTo;
+    window.resetForm = resetForm;
+  </script>
+</body>
+</html>
